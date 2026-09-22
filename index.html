@@ -2349,8 +2349,8 @@ function renderIncList(incs, empMap, containerEl, esAdmin) {
     var empNombre = empMap && empMap[inc.uid] ? empMap[inc.uid] : '';
     var badge = '<span class="badge '+(tipoColor[inc.tipo]||'bg-gray')+'">'+inc.tipo+'</span>';
     var fotos = '';
-    if (inc.foto1_id) fotos += '<img class="inc-foto" src="'+driveThumb(inc.foto1_id)+'" onclick="abrirFoto(''+inc.foto1_id+'')" title="Ver foto">';
-    if (inc.foto2_id) fotos += '<img class="inc-foto" src="'+driveThumb(inc.foto2_id)+'" onclick="abrirFoto(''+inc.foto2_id+'')" title="Ver foto">';
+    if (inc.foto1_id) fotos += '<img class="inc-foto" src="'+driveThumb(inc.foto1_id)+'" data-fid="'+inc.foto1_id+'" onclick="abrirFoto(this.dataset.fid)" title="Ver foto">';
+    if (inc.foto2_id) fotos += '<img class="inc-foto" src="'+driveThumb(inc.foto2_id)+'" data-fid="'+inc.foto2_id+'" onclick="abrirFoto(this.dataset.fid)" title="Ver foto">';
     return '<div class="inc-card">'
       + '<div class="inc-hdr">'
       + '<div>'
