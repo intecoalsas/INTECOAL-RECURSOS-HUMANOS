@@ -472,9 +472,14 @@
     </div>
 
     <!-- Historial -->
-    <div style="margin-bottom:16px">
+    <div style="margin-bottom:12px">
       <button class="btn-accion" onclick="generarCertificado()" style="background:var(--primary);color:#fff;margin-bottom:0">
         📄 DESCARGAR CERTIFICADO LABORAL
+      </button>
+    </div>
+    <div style="margin-bottom:16px">
+      <button class="btn-accion" onclick="descargarCertIngreso()" style="background:#15803d;color:#fff;margin-bottom:0">
+        💰 DESCARGAR CERT. DE INGRESOS Y RETENCIONES
       </button>
     </div>
     <div class="card">
@@ -1163,6 +1168,35 @@ function renderEmpHist(regs) {
       : '—';
     return '<tr><td>'+(i+1)+'</td><td><span class="badge '+bc+'">'+icon+' '+r.tipo+'</span></td><td>'+fmtDate(r.fecha)+'</td><td>'+r.hora+'</td><td>'+(r.lugar||'—')+'</td><td>'+gps+'</td></tr>';
   }).join('');
+}
+
+
+function descargarCertIngreso() {
+  var s = G.session;
+  if (!s) return;
+  var ced = String(s.cedula).replace(/[^0-9]/g, '');
+  showLoading('Buscando certificado…');
+  callAPI({ action: 'getCertificados', token: s.token },
+    function(res) {
+      hideLoading();
+      if (!res || !res.ok) { showToast('Error al obtener certificados.', 'error'); return; }
+      var fileId = res.certificados && res.certificados[ced];
+      if (!fileId) {
+        showToast('Tu certificado de ingresos aún no está disponible. Contacta al administrador.', 'warning', 5000);
+        return;
+      }
+      var url = 'https://drive.google.com/uc?export=download&id=' + fileId;
+      var a   = document.createElement('a');
+      a.href  = url;
+      a.target = '_blank';
+      a.rel    = 'noopener';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function() { document.body.removeChild(a); }, 500);
+      showToast('✅ Descargando certificado…', 'success');
+    },
+    function(err) { hideLoading(); showToast('Error: ' + err, 'error'); }
+  );
 }
 
 function fmtPeriodo(mes) {
