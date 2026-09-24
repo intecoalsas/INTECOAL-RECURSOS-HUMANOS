@@ -500,6 +500,57 @@
       <div class="card-hdr"><h3>💰 Mis Desprendibles</h3></div>
       <div class="card-body" id="emp-desp-body"><p class="empty">Cargando…</p></div>
     </div>
+
+    <!-- Incapacidades -->
+    <div class="card">
+      <div class="card-hdr"><h3>🏥 Mis Incapacidades</h3></div>
+      <div class="card-body">
+        <!-- Formulario para reportar -->
+        <div style="background:var(--bg);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px">
+          <div style="font-size:0.82rem;font-weight:700;color:var(--text-soft);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px">📋 Reportar Incapacidad</div>
+          <div class="form-row">
+            <div class="form-grp">
+              <label>Fecha inicio</label>
+              <input type="date" id="inc-inicio">
+            </div>
+            <div class="form-grp">
+              <label>Fecha fin</label>
+              <input type="date" id="inc-fin">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-grp">
+              <label>Tipo</label>
+              <select id="inc-tipo">
+                <option value="Enfermedad General">Enfermedad General</option>
+                <option value="Accidente de Trabajo">Accidente de Trabajo</option>
+                <option value="Enfermedad Laboral">Enfermedad Laboral</option>
+                <option value="Maternidad / Paternidad">Maternidad / Paternidad</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </div>
+            <div class="form-grp">
+              <label>EPS</label>
+              <input type="text" id="inc-eps" placeholder="Nombre de la EPS">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-grp">
+              <label>Observaciones</label>
+              <input type="text" id="inc-obs" placeholder="Opcional">
+            </div>
+          </div>
+          <div style="margin-bottom:12px">
+            <label style="display:block;font-size:0.76rem;font-weight:700;color:var(--text-soft);text-transform:uppercase;margin-bottom:6px">Documentos (máx. 2 fotos)</label>
+            <input type="file" id="inc-fotos" accept="image/*" multiple style="font-size:0.88rem;width:100%" onchange="seleccionarFotos()">
+            <div id="inc-previews" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"></div>
+          </div>
+          <button class="btn-sm success" style="padding:10px 22px;font-size:0.95rem" onclick="subirIncapacidad()">📤 Reportar Incapacidad</button>
+        </div>
+        <!-- Listado -->
+        <div id="emp-inc-body"><p class="empty">Cargando…</p></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2318,6 +2369,25 @@ function previsualizarFotos(inp) {
   });
 }
 
+function seleccionarFotos() {
+  var input = document.getElementById('inc-fotos');
+  var previews = document.getElementById('inc-previews');
+  _fotosSeleccionadas = [];
+  previews.innerHTML = '';
+  var files = Array.from(input.files).slice(0, 2);
+  files.forEach(function(file, idx) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      _fotosSeleccionadas[idx] = { base64: e.target.result, name: file.name };
+      var img = document.createElement('img');
+      img.src = e.target.result;
+      img.className = 'foto-preview';
+      previews.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 function subirIncapacidad() {
   var d1  = document.getElementById('inc-d1').value;
   var d2  = document.getElementById('inc-d2').value;
@@ -2419,7 +2489,8 @@ function renderIncList(incs, empMap, containerEl, esAdmin) {
 function cargarMisIncapacidades() {
   callAPI({ action: 'getMisIncapacidades', token: G.session.token },
     function(data) {
-      var el = document.getElementById('inc-list-body');
+      var el = document.getElementById('emp-inc-body');
+      if (!el) return;
       if (!data || !data.ok) { el.innerHTML = '<p class="empty">Error al cargar.</p>'; return; }
       var incs = (data.incapacidades || []).sort(function(a,b){ return b.fecha_registro.localeCompare(a.fecha_registro); });
       renderIncList(incs, null, el, false);
