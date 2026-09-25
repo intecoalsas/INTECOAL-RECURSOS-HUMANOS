@@ -1376,7 +1376,15 @@ function cargarMisDesprendibles() {
       if (!data || !data.ok || !data.nomina || !data.nomina.length) {
         el.innerHTML = '<p class="empty">No hay desprendibles disponibles aún.</p>'; return;
       }
-      var sorted = data.nomina.slice().sort(function(a, b) { return b.periodo.localeCompare(a.periodo); });
+      // Deduplicar por periodo+quincena (conservar el último registrado)
+      var seen = {};
+      var deduped = [];
+      data.nomina.forEach(function(n) {
+        var key = (n.periodo || '') + '|' + (n.quincena || '');
+        seen[key] = n; // sobreescribe si hay duplicado, se queda el último
+      });
+      Object.keys(seen).forEach(function(k) { deduped.push(seen[k]); });
+      var sorted = deduped.sort(function(a, b) { return b.periodo.localeCompare(a.periodo); });
       G._despNomina = sorted;
       el.innerHTML = sorted.map(function(n, idx) {
         var sb  = Number(n.salario_base)    || 0;
