@@ -511,11 +511,15 @@
           <div class="form-row">
             <div class="form-grp">
               <label>Fecha inicio</label>
-              <input type="date" id="inc-inicio">
+              <input type="date" id="inc-d1" onchange="calcDiasInc()">
             </div>
             <div class="form-grp">
               <label>Fecha fin</label>
-              <input type="date" id="inc-fin">
+              <input type="date" id="inc-d2" onchange="calcDiasInc()">
+            </div>
+            <div class="form-grp" style="max-width:90px">
+              <label>Días</label>
+              <input type="number" id="inc-dias" min="1" placeholder="0">
             </div>
           </div>
           <div class="form-row">
@@ -2377,6 +2381,14 @@ function previsualizarFotos(inp) {
   });
 }
 
+function calcDiasInc() {
+  var d1 = document.getElementById('inc-d1').value;
+  var d2 = document.getElementById('inc-d2').value;
+  if (!d1 || !d2) return;
+  var diff = Math.round((new Date(d2) - new Date(d1)) / (1000*60*60*24)) + 1;
+  if (diff > 0) document.getElementById('inc-dias').value = diff;
+}
+
 function seleccionarFotos() {
   var input = document.getElementById('inc-fotos');
   var previews = document.getElementById('inc-previews');
@@ -2421,7 +2433,7 @@ function subirIncapacidad() {
       // Limpiar form
       ['inc-d1','inc-d2','inc-dias','inc-eps','inc-obs'].forEach(function(id){ document.getElementById(id).value=''; });
       document.getElementById('inc-fotos').value = '';
-      document.getElementById('inc-prev-wrap').innerHTML = '';
+      document.getElementById('inc-previews').innerHTML = '';
       _fotosSeleccionadas = [];
       cargarMisIncapacidades();
     }, function(err) { hideLoading(); showToast('Error: '+err,'error'); });
