@@ -1391,7 +1391,7 @@ function cargarMisDesprendibles() {
       var seen = {};
       var deduped = [];
       data.nomina.forEach(function(n) {
-        var key = (n.periodo || '') + '|' + (n.quincena || '');
+        var key = normPeriodo(n.periodo) + '|' + (n.quincena || '');
         seen[key] = n; // sobreescribe si hay duplicado, se queda el último
       });
       Object.keys(seen).forEach(function(k) { deduped.push(seen[k]); });
@@ -1932,7 +1932,7 @@ function copiarQuincenaAnterior() {
 
   var nomina = G.allData.nomina || [];
   var anteriores = nomina.filter(function(n) {
-    return n.periodo === periodoAnt && String(n.quincena) === String(quincAnt);
+    return normPeriodo(n.periodo) === periodoAnt && String(n.quincena) === String(quincAnt);
   });
 
   if (!anteriores.length) {
@@ -1978,7 +1978,7 @@ function cargarNomina(cb) {
   var tbody  = document.getElementById('nom-tbody');
 
   tbody.innerHTML = activos.map(function(emp) {
-    var existing = nomina.find(function(n){ return n.uid===emp.uid && n.periodo===mes && String(n.quincena)===String(quinc); });
+    var existing = nomina.find(function(n){ return n.uid===emp.uid && normPeriodo(n.periodo)===mes && String(n.quincena)===String(quinc); });
     // Días: usa el guardado si existe, sino el automático
     var ndAuto = (function() {
       if (quinc === '1') return 15;
