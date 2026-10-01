@@ -754,7 +754,7 @@
               <div class="form-grp"><label>Quincena</label>
                 <select id="nom-quinc"><option value="1">1ra (1 al 15)</option><option value="2">2da (16 al fin)</option></select>
               </div>
-              <div style="display:flex;align-items:flex-end"><button class="btn-sm primary" onclick="cargarNomina()" style="padding:9px 18px">Cargar</button></div>
+              <div style="display:flex;align-items:flex-end;gap:8px"><button class="btn-sm primary" onclick="cargarNomina()" style="padding:9px 18px">Cargar</button><button class="btn-sm" onclick="copiarQuincenaAnterior()" style="padding:9px 18px;background:#6c757d;color:#fff" title="Copia los valores de la quincena anterior">📋 Copiar anterior</button></div>
             </div>
           </div>
         </div>
@@ -1838,7 +1838,60 @@ function calcularHoras() {
 }
 
 // ── Nómina ────────────────────────────────────────────────────────
-function cargarNomina() {
+function copiarQuincenaAnterior() {
+  var mes   = document.getElementById('nom-mes').value;
+  var quinc = document.getElementById('nom-quinc').value;
+  if (!mes) { showToast('Selecciona el mes primero.', 'warning'); return; }
+  if (!G.allData) { showToast('Carga los datos primero.', 'warning'); return; }
+
+  // Calcular periodo anterior
+  var periodoAnt, quincAnt;
+  if (quinc === '2') {
+    periodoAnt = mes;
+    quincAnt   = '1';
+  } else {
+    // Quincena 1 → copiar de quincena 2 del mes anterior
+    var d = new Date(mes + '-01');
+    d.setMonth(d.getMonth() - 1);
+    periodoAnt = d.toISOString().substring(0, 7);
+    quincAnt   = '2';
+  }
+
+  var nomina = G.allData.nomina || [];
+  var anteriores = nomina.filter(function(n) {
+    return n.periodo === periodoAnt && String(n.quincena) === String(quincAnt);
+  });
+
+  if (!anteriores.length) {
+    showToast('No hay datos en la quincena anterior para copiar.', 'warning');
+    return;
+  }
+
+  // Cargar primero la quincena actual en blanco y luego rellenar
+  cargarNomina(function() {
+    anteriores.forEach(function(n) {
+      function setVal(id, val) {
+        var el = document.getElementById(id);
+        if (el) { el.value = val || 0; }
+      }
+      setVal('ns-nd-'  + n.uid, n.dias);
+      setVal('ns-sb-'  + n.uid, n.salario_base);
+      setVal('ns-atr-' + n.uid, n.aux_transporte);
+      setVal('ns-oau-' + n.uid, n.otros_auxilios);
+      setVal('ns-bon-' + n.uid, n.bonificaciones);
+      setVal('ns-hx-'  + n.uid, n.val_horas_extra);
+      setVal('ns-vac-' + n.uid, n.vacaciones);
+      setVal('ns-dsa-' + n.uid, n.dcto_salud);
+      setVal('ns-dpe-' + n.uid, n.dcto_pension);
+      var nt = document.getElementById('ns-nt-' + n.uid);
+      if (nt) nt.value = n.notas || '';
+      updNomTot(n.uid);
+    });
+    showToast('✅ Datos copiados de la quincena anterior. Revisa y guarda.', 'success');
+  });
+}
+
+function cargarNomina(cb) {
   if (!G.allData) return;
   var mes    = document.getElementById('nom-mes').value;
   var quinc  = document.getElementById('nom-quinc').value;
@@ -1853,12 +1906,13 @@ function cargarNomina() {
 
   tbody.innerHTML = activos.map(function(emp) {
     var existing = nomina.find(function(n){ return n.uid===emp.uid && n.periodo===mes && String(n.quincena)===String(quinc); });
-    // Días automáticos: 15 para 1ra quincena, días restantes del mes para 2da
-    var nd = (function() {
+    // Días: usa el guardado si existe, sino el automático
+    var ndAuto = (function() {
       if (quinc === '1') return 15;
       var p = mes.split('-');
       return new Date(parseInt(p[0]), parseInt(p[1]), 0).getDate() - 15;
     })();
+    var nd = existing && existing.dias ? Number(existing.dias) : ndAuto;
     var sb   = existing ? existing.salario_base      : 0;
     var atr  = existing ? (existing.aux_transporte    || 0) : 0;
     var oau  = existing ? (existing.otros_auxilios    || 0) : 0;
@@ -1871,7 +1925,7 @@ function cargarNomina() {
     var tot  = sb + atr + oau + bon + hex + vac - dsa - dpe;
     return '<tr>'
       + '<td>'+emp.nombre+'</td>'
-      + '<td style="font-weight:800;color:var(--accent)">'+nd+'</td>'
+      + '<td><input class="nom-inp" type="number" id="ns-nd-'+emp.uid+'" value="'+nd+'" min="1" max="31" style="width:48px;font-weight:800;color:var(--accent)"></td>'
       + '<td><input class="nom-inp" type="number" id="ns-sb-'+emp.uid+'"  value="'+sb+'"  oninput="updNomTot(\''+emp.uid+'\')"></td>'
       + '<td><input class="nom-inp" type="number" id="ns-atr-'+emp.uid+'" value="'+atr+'" oninput="updNomTot(\''+emp.uid+'\')"></td>'
       + '<td><input class="nom-inp" type="number" id="ns-oau-'+emp.uid+'" value="'+oau+'" oninput="updNomTot(\''+emp.uid+'\')"></td>'
@@ -1885,10 +1939,12 @@ function cargarNomina() {
       + '<td><button class="btn-sm success" onclick="guardarNomina(\''+emp.uid+'\',\''+mes+'\',\''+quinc+'\')">💾</button></td>'
       + '</tr>';
   }).join('') || '<tr><td colspan="9" class="empty">Sin empleados activos.</td></tr>';
+  if (cb) cb();
 }
 
 function updNomTot(uid) {
   function v(id) { var el = document.getElementById(id); return el ? parseFloat(el.value)||0 : 0; }
+  var nd  = v('ns-nd-'+uid);
   var sb  = v('ns-sb-'+uid);
   var atr = v('ns-atr-'+uid);
   var oau = v('ns-oau-'+uid);
@@ -1912,7 +1968,7 @@ function guardarNomina(uid, periodo, quincena) {
   var dsa = v('ns-dsa-'+uid);
   var dpe = v('ns-dpe-'+uid);
   var nts = document.getElementById('ns-nt-'+uid) ? document.getElementById('ns-nt-'+uid).value : '';
-  var data = encodeURIComponent(JSON.stringify({uid:uid, periodo:periodo, quincena:quincena, salario_base:sb, aux_transporte:atr, otros_auxilios:oau, bonificaciones:bon, val_horas_extra:hex, vacaciones:vac, dcto_salud:dsa, dcto_pension:dpe, notas:nts}));
+  var data = encodeURIComponent(JSON.stringify({uid:uid, periodo:periodo, quincena:quincena, dias:nd, salario_base:sb, aux_transporte:atr, otros_auxilios:oau, bonificaciones:bon, val_horas_extra:hex, vacaciones:vac, dcto_salud:dsa, dcto_pension:dpe, notas:nts}));
   callAPI({ action:'saveNomina', token:G.session.token, data:data },
     function(res){
       if (!res||!res.ok){showToast((res&&res.error)||'Error.','error');return;}
