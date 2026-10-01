@@ -761,7 +761,7 @@
         <div class="card">
           <div class="tbl-wrap">
             <table>
-              <thead><tr><th>Empleado</th><th>Días</th><th>Sueldo Base</th><th>Aux Transporte</th><th>Otros Auxilios</th><th>Bonificaciones</th><th>Val H.Extra</th><th>Dcto Salud</th><th>Dcto Pensión</th><th>Notas</th><th>A Pagar</th><th>💾</th></tr></thead>
+              <thead><tr><th>Empleado</th><th>Días</th><th>Sueldo Base</th><th>Aux Transporte</th><th>Otros Auxilios</th><th>Bonificaciones</th><th>Val H.Extra</th><th>Vacaciones</th><th>Dcto Salud</th><th>Dcto Pensión</th><th>Notas</th><th>A Pagar</th><th>💾</th></tr></thead>
               <tbody id="nom-tbody"><tr><td colspan="9" class="empty">Selecciona mes y quincena.</td></tr></tbody>
             </table>
           </div>
@@ -1282,12 +1282,13 @@ function imprimirDesprendible(idx) {
   var oau = Number(n.otros_auxilios)  || 0;
   var bon = Number(n.bonificaciones)  || 0;
   var hex = Number(n.val_horas_extra) || 0;
+  var vac = Number(n.vacaciones)      || 0;
   var dsa = Number(n.dcto_salud)      || 0;
   var dpe = Number(n.dcto_pension)    || 0;
   var tot = sb + atr + oau + bon + hex - dsa - dpe;
-  var devengado   = sb + atr + oau + bon + hex;
+  var devengado   = sb + atr + oau + bon + hex + vac;
   var deducciones = dsa + dpe;
-  var ql  = n.quincena === '2' ? '2da Quincena (16 al fin de mes)' : '1ra Quincena (1 al 15)';
+  var ql  = n.quincena === '2' ? 'NO.2  DE 16 AL 30' : 'NO.1  DE 1 AL 15';
   var per = fmtPeriodo(n.periodo);
   function fmtM(x) { return '$ ' + (Number(x)||0).toLocaleString('es-CO'); }
 
@@ -1348,6 +1349,7 @@ function imprimirDesprendible(idx) {
     + '<tr><td>Otros Auxilios</td><td>' + fmtM(oau) + '</td></tr>'
     + '<tr><td>Bonificaciones</td><td>' + fmtM(bon) + '</td></tr>'
     + '<tr><td>Valor Horas Extra</td><td>' + fmtM(hex) + '</td></tr>'
+    + (vac ? '<tr><td>Vacaciones</td><td>' + fmtM(vac) + '</td></tr>' : '')
     + '<tr class="sub"><td>Total Devengado</td><td>' + fmtM(devengado) + '</td></tr>'
     + '</table>'
     + '<div class="sec sr">- Deducciones</div>'
@@ -1396,10 +1398,11 @@ function cargarMisDesprendibles() {
         var oau = Number(n.otros_auxilios)  || 0;
         var bon = Number(n.bonificaciones)  || 0;
         var hex = Number(n.val_horas_extra) || 0;
+        var vac = Number(n.vacaciones)      || 0;
         var dsa = Number(n.dcto_salud)      || 0;
         var dpe = Number(n.dcto_pension)    || 0;
         var tot = sb + atr + oau + bon + hex - dsa - dpe;
-        var ql  = n.quincena === '2' ? '2da quincena' : '1ra quincena';
+        var ql  = n.quincena === '2' ? 'NO.2  DE 16 AL 30' : 'NO.1  DE 1 AL 15';
         var per = fmtPeriodo(n.periodo);
         return '<div class="desp-card">'
           + '<div class="desp-hdr">'
@@ -1873,6 +1876,7 @@ function cargarNomina() {
       + '<td><input class="nom-inp" type="number" id="ns-oau-'+emp.uid+'" value="'+oau+'" oninput="updNomTot(\''+emp.uid+'\')"></td>'
       + '<td><input class="nom-inp" type="number" id="ns-bon-'+emp.uid+'" value="'+bon+'" oninput="updNomTot(\''+emp.uid+'\')"></td>'
       + '<td><input class="nom-inp" type="number" id="ns-hx-'+emp.uid+'"  value="'+hex+'" oninput="updNomTot(\''+emp.uid+'\')"></td>'
+      + '<td><input class="nom-inp" type="number" id="ns-vac-'+emp.uid+'" value="'+vac+'" oninput="updNomTot(\''+emp.uid+'\')"></td>'
       + '<td><input class="nom-inp" type="number" id="ns-dsa-'+emp.uid+'" value="'+dsa+'" oninput="updNomTot(\''+emp.uid+'\')"></td>'
       + '<td><input class="nom-inp" type="number" id="ns-dpe-'+emp.uid+'" value="'+dpe+'" oninput="updNomTot(\''+emp.uid+'\')"></td>'
       + '<td><input class="nom-inp" type="text"   id="ns-nt-'+emp.uid+'"  value="'+nts+'"></td>'
@@ -1889,10 +1893,11 @@ function updNomTot(uid) {
   var oau = v('ns-oau-'+uid);
   var bon = v('ns-bon-'+uid);
   var hex = v('ns-hx-'+uid);
+  var vac = v('ns-vac-'+uid);
   var dsa = v('ns-dsa-'+uid);
   var dpe = v('ns-dpe-'+uid);
   var el  = document.getElementById('ns-tot-'+uid);
-  if (el) el.textContent = fmtMoney(sb + atr + oau + bon + hex - dsa - dpe);
+  if (el) el.textContent = fmtMoney(sb + atr + oau + bon + hex + vac - dsa - dpe);
 }
 
 function guardarNomina(uid, periodo, quincena) {
@@ -1902,10 +1907,11 @@ function guardarNomina(uid, periodo, quincena) {
   var oau = v('ns-oau-'+uid);
   var bon = v('ns-bon-'+uid);
   var hex = v('ns-hx-'+uid);
+  var vac = v('ns-vac-'+uid);
   var dsa = v('ns-dsa-'+uid);
   var dpe = v('ns-dpe-'+uid);
   var nts = document.getElementById('ns-nt-'+uid) ? document.getElementById('ns-nt-'+uid).value : '';
-  var data = encodeURIComponent(JSON.stringify({uid:uid, periodo:periodo, quincena:quincena, salario_base:sb, aux_transporte:atr, otros_auxilios:oau, bonificaciones:bon, val_horas_extra:hex, dcto_salud:dsa, dcto_pension:dpe, notas:nts}));
+  var data = encodeURIComponent(JSON.stringify({uid:uid, periodo:periodo, quincena:quincena, salario_base:sb, aux_transporte:atr, otros_auxilios:oau, bonificaciones:bon, val_horas_extra:hex, vacaciones:vac, dcto_salud:dsa, dcto_pension:dpe, notas:nts}));
   callAPI({ action:'saveNomina', token:G.session.token, data:data },
     function(res){
       if (!res||!res.ok){showToast((res&&res.error)||'Error.','error');return;}
