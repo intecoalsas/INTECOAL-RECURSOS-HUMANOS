@@ -1852,8 +1852,14 @@ function renderHistorialNomina() {
   // Extraer periodos únicos y ordenar desc
   var map = {};
   nomina.forEach(function(n) {
-    var key = n.periodo + '|' + n.quincena;
-    if (!map[key]) map[key] = { periodo: n.periodo, quincena: String(n.quincena), count: 0 };
+    var per = n.periodo || '';
+    // Normalizar si viene como fecha completa
+    if (per.length > 7) {
+      var d = new Date(per);
+      if (!isNaN(d)) per = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+    }
+    var key = per + '|' + n.quincena;
+    if (!map[key]) map[key] = { periodo: per, quincena: String(n.quincena), count: 0 };
     map[key].count++;
   });
 
@@ -1882,7 +1888,13 @@ function renderHistorialNomina() {
 }
 
 function abrirQuincena(periodo, quincena) {
-  document.getElementById('nom-mes').value   = periodo;
+  // Normalizar periodo a formato yyyy-MM por si viene como fecha completa del Sheet
+  var perNorm = periodo;
+  if (periodo && periodo.length > 7) {
+    var d = new Date(periodo);
+    if (!isNaN(d)) perNorm = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  }
+  document.getElementById('nom-mes').value   = perNorm;
   document.getElementById('nom-quinc').value = quincena;
   showLoading('Cargando quincena…');
   recargarDatos(function() {
