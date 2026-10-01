@@ -757,7 +757,7 @@
             <div class="form-row">
               <div class="form-grp"><label>Mes</label><input type="month" id="nom-mes"></div>
               <div class="form-grp"><label>Quincena</label>
-                <select id="nom-quinc"><option value="1">1ra (1 al 15)</option><option value="2">2da (16 al fin)</option></select>
+                <select id="nom-quinc"><option value="1">1ra (1 al 15)</option><option value="2">2da (16 al 30)</option></select>
               </div>
               <div style="display:flex;align-items:flex-end;gap:8px"><button class="btn-sm primary" onclick="cargarNomina()" style="padding:9px 18px">Cargar</button><button class="btn-sm" onclick="copiarQuincenaAnterior()" style="padding:9px 18px;background:#6c757d;color:#fff" title="Copia los valores de la quincena anterior">📋 Copiar anterior</button></div>
             </div>
@@ -1884,10 +1884,15 @@ function renderHistorialNomina() {
 function abrirQuincena(periodo, quincena) {
   document.getElementById('nom-mes').value   = periodo;
   document.getElementById('nom-quinc').value = quincena;
-  cargarNomina();
-  // Scroll a la tabla
-  var tabla = document.querySelector('#tab-nom .card:last-of-type');
-  if (tabla) tabla.scrollIntoView({ behavior: 'smooth' });
+  showLoading('Cargando quincena…');
+  recargarDatos(function() {
+    hideLoading();
+    cargarNomina();
+    setTimeout(function() {
+      var tabla = document.getElementById('nom-tbody');
+      if (tabla) tabla.closest('table') && tabla.closest('table').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 200);
+  });
 }
 
 function copiarQuincenaAnterior() {
