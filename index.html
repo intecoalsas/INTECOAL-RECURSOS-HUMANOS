@@ -1864,10 +1864,11 @@ function cargarNomina() {
     var oau  = existing ? (existing.otros_auxilios    || 0) : 0;
     var bon  = existing ? (existing.bonificaciones    || 0) : 0;
     var hex  = existing ? (existing.val_horas_extra   || 0) : 0;
+    var vac  = existing ? (existing.vacaciones        || 0) : 0;
     var dsa  = existing ? (existing.dcto_salud        || 0) : 0;
     var dpe  = existing ? (existing.dcto_pension      || 0) : 0;
     var nts  = existing ? (existing.notas||'')        : '';
-    var tot  = sb + atr + oau + bon + hex - dsa - dpe;
+    var tot  = sb + atr + oau + bon + hex + vac - dsa - dpe;
     return '<tr>'
       + '<td>'+emp.nombre+'</td>'
       + '<td style="font-weight:800;color:var(--accent)">'+nd+'</td>'
