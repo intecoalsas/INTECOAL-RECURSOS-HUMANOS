@@ -1852,12 +1852,7 @@ function renderHistorialNomina() {
   // Extraer periodos únicos y ordenar desc
   var map = {};
   nomina.forEach(function(n) {
-    var per = n.periodo || '';
-    // Normalizar si viene como fecha completa
-    if (per.length > 7) {
-      var d = new Date(per);
-      if (!isNaN(d)) per = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
-    }
+    var per = normPeriodo(n.periodo);
     var key = per + '|' + n.quincena;
     if (!map[key]) map[key] = { periodo: per, quincena: String(n.quincena), count: 0 };
     map[key].count++;
@@ -1887,13 +1882,22 @@ function renderHistorialNomina() {
     + '</div>';
 }
 
+function normPeriodo(v) {
+  if (!v) return '';
+  var s = String(v);
+  // Ya está en formato yyyy-MM
+  if (/^\d{4}-\d{2}$/.test(s)) return s;
+  // Intentar parsear fecha
+  var d = new Date(s);
+  if (!isNaN(d.getTime())) return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  // Extraer yyyy-MM con regex
+  var m = s.match(/(\d{4})[^0-9](\d{2})/);
+  if (m) return m[1] + '-' + m[2];
+  return s.substring(0, 7);
+}
+
 function abrirQuincena(periodo, quincena) {
-  // Normalizar periodo a formato yyyy-MM por si viene como fecha completa del Sheet
-  var perNorm = periodo;
-  if (periodo && periodo.length > 7) {
-    var d = new Date(periodo);
-    if (!isNaN(d)) perNorm = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
-  }
+  var perNorm = normPeriodo(periodo);
   document.getElementById('nom-mes').value   = perNorm;
   document.getElementById('nom-quinc').value = quincena;
   showLoading('Cargando quincena…');
