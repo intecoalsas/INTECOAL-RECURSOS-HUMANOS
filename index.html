@@ -766,8 +766,15 @@
         <div class="card">
           <div class="tbl-wrap">
             <table>
-              <thead><tr><th>Empleado</th><th>Días</th><th>Sueldo Base</th><th>Aux Transporte</th><th>Otros Auxilios</th><th>Bonificaciones</th><th>Val H.Extra</th><th>Vacaciones</th><th>Dcto Salud</th><th>Dcto Pensión</th><th>Notas</th><th>A Pagar</th><th>💾</th></tr></thead>
+              <thead><tr><th>Empleado</th><th>Días</th><th>Salario Quincena</th><th>Aux Transporte</th><th>Otros Auxilios</th><th>Bonificaciones</th><th>Val H.Extra</th><th>Vacaciones</th><th>Dcto Salud</th><th>Dcto Pensión</th><th>Notas</th><th>Total Devengado</th><th>💾</th></tr></thead>
               <tbody id="nom-tbody"><tr><td colspan="9" class="empty">Selecciona mes y quincena.</td></tr></tbody>
+              <tfoot id="nom-tfoot" style="display:none">
+                <tr style="background:var(--primary);color:#fff;font-weight:900;font-size:1rem">
+                  <td colspan="11" style="padding:13px 16px;text-align:right;letter-spacing:.04em;text-transform:uppercase">🧾 Total Nómina Quincenal</td>
+                  <td id="nom-grand-total" style="padding:13px 16px;font-size:1.15rem;white-space:nowrap;color:#4ade80">$ 0</td>
+                  <td></td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </div>
@@ -2008,10 +2015,13 @@ function cargarNomina(cb) {
       + '<td><input class="nom-inp" type="number" id="ns-dsa-'+emp.uid+'" value="'+dsa+'" oninput="updNomTot(\''+emp.uid+'\')"></td>'
       + '<td><input class="nom-inp" type="number" id="ns-dpe-'+emp.uid+'" value="'+dpe+'" oninput="updNomTot(\''+emp.uid+'\')"></td>'
       + '<td><input class="nom-inp" type="text"   id="ns-nt-'+emp.uid+'"  value="'+nts+'"></td>'
-      + '<td id="ns-tot-'+emp.uid+'" class="total-verde">'+fmtMoney(tot)+'</td>'
+      + '<td id="ns-tot-'+emp.uid+'" class="total-verde" style="font-size:1rem;font-weight:900">'+fmtMoney(tot)+'</td>'
       + '<td><button class="btn-sm success" onclick="guardarNomina(\''+emp.uid+'\',\''+mes+'\',\''+quinc+'\')">💾</button></td>'
       + '</tr>';
   }).join('') || '<tr><td colspan="9" class="empty">Sin empleados activos.</td></tr>';
+  // Recalcular totales de todos los empleados al cargar
+  activos.forEach(function(emp) { updNomTot(emp.uid); });
+  updTotalGeneral();
   if (cb) cb();
 }
 
@@ -2028,6 +2038,20 @@ function updNomTot(uid) {
   var dpe = v('ns-dpe-'+uid);
   var el  = document.getElementById('ns-tot-'+uid);
   if (el) el.textContent = fmtMoney(sb + atr + oau + bon + hex + vac - dsa - dpe);
+  updTotalGeneral();
+}
+
+function updTotalGeneral() {
+  var cells = document.querySelectorAll('[id^="ns-tot-"]');
+  var total = 0;
+  cells.forEach(function(el) {
+    var raw = el.textContent.replace(/\./g,'').replace(/,/g,'.').replace(/[^0-9.-]/g,'');
+    total += parseFloat(raw) || 0;
+  });
+  var gt = document.getElementById('nom-grand-total');
+  if (gt) gt.textContent = fmtMoney(total);
+  var tf = document.getElementById('nom-tfoot');
+  if (tf) tf.style.display = cells.length ? '' : 'none';
 }
 
 function guardarNomina(uid, periodo, quincena) {
