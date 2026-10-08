@@ -2056,6 +2056,7 @@ function updTotalGeneral() {
 
 function guardarNomina(uid, periodo, quincena) {
   function v(id) { var el = document.getElementById(id); return el ? parseFloat(el.value)||0 : 0; }
+  var nd  = v('ns-nd-'+uid);
   var sb  = v('ns-sb-'+uid);
   var atr = v('ns-atr-'+uid);
   var oau = v('ns-oau-'+uid);
