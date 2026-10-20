@@ -1421,7 +1421,7 @@ function cargarMisDesprendibles() {
         var vac = Number(n.vacaciones)      || 0;
         var dsa = Number(n.dcto_salud)      || 0;
         var dpe = Number(n.dcto_pension)    || 0;
-        var tot = sb + atr + oau + bon + hex - dsa - dpe;
+        var tot = sb + atr + oau + bon + hex + vac - dsa - dpe;
         var ql  = n.quincena === '2' ? 'NO.2  DE 16 AL 30' : 'NO.1  DE 1 AL 15';
         var per = fmtPeriodo(n.periodo);
         return '<div class="desp-card">'
