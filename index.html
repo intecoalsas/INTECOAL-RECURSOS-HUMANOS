@@ -2134,16 +2134,17 @@ function cargarDesdeExcel(input) {
 }
 
 function descargarPlantilla() {
-  var activos = (G.allData && G.allData.empleados || []).filter(function(e){ return e.estado==='activo'; });
-  var data = [['CEDULA','DIAS','SALARIO_QUINCENA','AUX_TRANSPORTE','OTROS_AUXILIOS','BONIFICACIONES','HORAS_EXTRA','VACACIONES','DCTO_SALUD','DCTO_PENSION','NOTAS']];
-  activos.forEach(function(e) { data.push([e.uid, 15, 0, 0, 0, 0, 0, 0, 0, 0, '']); });
-  if (!activos.length) data.push(['1234567890', 15, 0, 0, 0, 0, 0, 0, 0, 0, '']);
+  if (!G.allData || !G.allData.empleados) { showToast('Primero carga los datos (presiona "Cargar").', 'warning'); return; }
+  var activos = G.allData.empleados.filter(function(e){ return e.estado==='activo'; });
+  var data = [['CEDULA','NOMBRE (referencia)','DIAS','SALARIO_QUINCENA','AUX_TRANSPORTE','OTROS_AUXILIOS','BONIFICACIONES','HORAS_EXTRA','VACACIONES','DCTO_SALUD','DCTO_PENSION','NOTAS']];
+  activos.forEach(function(e) { data.push([e.uid, e.nombre||'', 15, 0, 0, 0, 0, 0, 0, 0, 0, '']); });
+  if (!activos.length) data.push(['1234567890', 'Empleado Ejemplo', 15, 0, 0, 0, 0, 0, 0, 0, 0, '']);
   var ws = XLSX.utils.aoa_to_sheet(data);
-  ws['!cols'] = [{wch:14},{wch:6},{wch:18},{wch:16},{wch:16},{wch:16},{wch:12},{wch:12},{wch:12},{wch:12},{wch:20}];
+  ws['!cols'] = [{wch:14},{wch:28},{wch:6},{wch:18},{wch:16},{wch:16},{wch:16},{wch:12},{wch:12},{wch:12},{wch:12},{wch:20}];
   var wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Nomina');
   XLSX.writeFile(wb, 'plantilla_nomina.xlsx');
-  showToast('📥 Plantilla descargada — completa los valores y usa "Cargar Excel".', 'success');
+  showToast('📥 Plantilla descargada con ' + activos.length + ' empleados.', 'success');
 }
 
 function guardarTodaNomina() {
