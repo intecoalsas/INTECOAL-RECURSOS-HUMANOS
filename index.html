@@ -365,6 +365,7 @@
       .admin-tabbar { display: none !important; }
     }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -759,7 +760,14 @@
               <div class="form-grp"><label>Quincena</label>
                 <select id="nom-quinc"><option value="1">1ra (1 al 15)</option><option value="2">2da (16 al 30)</option></select>
               </div>
-              <div style="display:flex;align-items:flex-end;gap:8px"><button class="btn-sm primary" onclick="cargarNomina()" style="padding:9px 18px">Cargar</button><button class="btn-sm" onclick="copiarQuincenaAnterior()" style="padding:9px 18px;background:#6c757d;color:#fff" title="Copia los valores de la quincena anterior">📋 Copiar anterior</button></div>
+              <div style="display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap">
+                <button class="btn-sm primary" onclick="cargarNomina()" style="padding:9px 18px">Cargar</button>
+                <button class="btn-sm" onclick="copiarQuincenaAnterior()" style="padding:9px 18px;background:#6c757d;color:#fff" title="Copia los valores de la quincena anterior">📋 Copiar anterior</button>
+                <input type="file" id="excel-nom-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="cargarDesdeExcel(this)">
+                <button class="btn-sm" onclick="document.getElementById('excel-nom-input').click()" style="padding:9px 18px;background:#217346;color:#fff" title="Carga datos desde archivo Excel">📂 Cargar Excel</button>
+                <button class="btn-sm" onclick="descargarPlantilla()" style="padding:9px 18px;background:#145a32;color:#fff" title="Descarga plantilla Excel con los empleados">📥 Plantilla</button>
+                <button class="btn-sm success" onclick="guardarTodaNomina()" style="padding:9px 18px" title="Guarda todos los empleados de una vez">💾 Guardar Todo</button>
+              </div>
             </div>
           </div>
         </div>
@@ -2075,6 +2083,97 @@ function guardarNomina(uid, periodo, quincena) {
     },
     function(err){showToast('Error: '+err,'error');}
   );
+}
+
+// ── Cargar nómina desde Excel ─────────────────────────────────────
+function cargarDesdeExcel(input) {
+  if (!input.files || !input.files[0]) return;
+  if (!document.querySelector('#nom-tbody [id^="ns-sb-"]')) {
+    showToast('Primero presiona "Cargar" para cargar el período (mes y quincena).', 'warning');
+    input.value = ''; return;
+  }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var wb   = XLSX.read(e.target.result, {type:'array'});
+      var ws   = wb.Sheets[wb.SheetNames[0]];
+      var rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+      if (!rows.length) { showToast('El archivo está vacío.', 'warning'); return; }
+      var cargados = 0, noEncontrados = [];
+      rows.forEach(function(row) {
+        var norm = {};
+        Object.keys(row).forEach(function(k) { norm[k.trim().toUpperCase().replace(/[\s\-]/g,'_')] = row[k]; });
+        var ced = String(norm['CEDULA'] || norm['CÉDULA'] || norm['NIT'] || norm['DOCUMENTO'] || '').trim();
+        if (!ced) return;
+        if (!document.getElementById('ns-sb-'+ced)) { noEncontrados.push(ced); return; }
+        function sv(id, val) {
+          var el = document.getElementById(id);
+          if (el) el.value = parseFloat(String(val).replace(/[^0-9.-]/g,'')) || 0;
+        }
+        sv('ns-nd-'+ced,  norm['DIAS']||norm['DÍAS']||15);
+        sv('ns-sb-'+ced,  norm['SALARIO_QUINCENA']||norm['SALARIO']||0);
+        sv('ns-atr-'+ced, norm['AUX_TRANSPORTE']||norm['AUXILIO_TRANSPORTE']||0);
+        sv('ns-oau-'+ced, norm['OTROS_AUXILIOS']||0);
+        sv('ns-bon-'+ced, norm['BONIFICACIONES']||0);
+        sv('ns-hx-'+ced,  norm['HORAS_EXTRA']||norm['VAL_HORAS_EXTRA']||0);
+        sv('ns-vac-'+ced, norm['VACACIONES']||0);
+        sv('ns-dsa-'+ced, norm['DCTO_SALUD']||norm['SALUD']||0);
+        sv('ns-dpe-'+ced, norm['DCTO_PENSION']||norm['DCTO_PENSIÓN']||norm['PENSION']||norm['PENSIÓN']||0);
+        var ntEl = document.getElementById('ns-nt-'+ced);
+        if (ntEl) ntEl.value = norm['NOTAS'] || '';
+        updNomTot(ced);
+        cargados++;
+      });
+      var msg = '✅ ' + cargados + ' empleado(s) cargados desde Excel.';
+      if (noEncontrados.length) msg += ' Cédulas no encontradas: ' + noEncontrados.join(', ');
+      showToast(msg, noEncontrados.length ? 'warning' : 'success');
+    } catch(err) { showToast('Error leyendo el archivo: ' + err.message, 'error'); }
+    input.value = '';
+  };
+  reader.readAsArrayBuffer(input.files[0]);
+}
+
+function descargarPlantilla() {
+  var activos = (G.allData && G.allData.empleados || []).filter(function(e){ return e.estado==='activo'; });
+  var data = [['CEDULA','DIAS','SALARIO_QUINCENA','AUX_TRANSPORTE','OTROS_AUXILIOS','BONIFICACIONES','HORAS_EXTRA','VACACIONES','DCTO_SALUD','DCTO_PENSION','NOTAS']];
+  activos.forEach(function(e) { data.push([e.uid, 15, 0, 0, 0, 0, 0, 0, 0, 0, '']); });
+  if (!activos.length) data.push(['1234567890', 15, 0, 0, 0, 0, 0, 0, 0, 0, '']);
+  var ws = XLSX.utils.aoa_to_sheet(data);
+  ws['!cols'] = [{wch:14},{wch:6},{wch:18},{wch:16},{wch:16},{wch:16},{wch:12},{wch:12},{wch:12},{wch:12},{wch:20}];
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Nomina');
+  XLSX.writeFile(wb, 'plantilla_nomina.xlsx');
+  showToast('📥 Plantilla descargada — completa los valores y usa "Cargar Excel".', 'success');
+}
+
+function guardarTodaNomina() {
+  var mes   = document.getElementById('nom-mes').value;
+  var quinc = document.getElementById('nom-quinc').value;
+  if (!mes) { showToast('Selecciona el mes primero.', 'warning'); return; }
+  var activos = (G.allData && G.allData.empleados || []).filter(function(e){ return e.estado==='activo'; });
+  if (!activos.length) { showToast('Sin empleados activos.', 'warning'); return; }
+  showToast('⏳ Guardando nómina completa… por favor espera.', 'info');
+  var idx = 0;
+  function siguiente() {
+    if (idx >= activos.length) {
+      showToast('✅ Nómina completa guardada (' + activos.length + ' empleados).', 'success');
+      recargarDatos(function(){});
+      return;
+    }
+    var uid = activos[idx].uid;
+    idx++;
+    function v(id) { var el = document.getElementById(id); return el ? parseFloat(el.value)||0 : 0; }
+    var nd  = v('ns-nd-'+uid), sb  = v('ns-sb-'+uid), atr = v('ns-atr-'+uid);
+    var oau = v('ns-oau-'+uid), bon = v('ns-bon-'+uid), hex = v('ns-hx-'+uid);
+    var vac = v('ns-vac-'+uid), dsa = v('ns-dsa-'+uid), dpe = v('ns-dpe-'+uid);
+    var nts = document.getElementById('ns-nt-'+uid) ? document.getElementById('ns-nt-'+uid).value : '';
+    var data = encodeURIComponent(JSON.stringify({uid:uid, periodo:mes, quincena:quinc, dias:nd, salario_base:sb, aux_transporte:atr, otros_auxilios:oau, bonificaciones:bon, val_horas_extra:hex, vacaciones:vac, dcto_salud:dsa, dcto_pension:dpe, notas:nts}));
+    callAPI({ action:'saveNomina', token:G.session.token, data:data },
+      function(){ setTimeout(siguiente, 350); },
+      function(){ setTimeout(siguiente, 350); }
+    );
+  }
+  siguiente();
 }
 
 // ── Exportar CSV ──────────────────────────────────────────────────
