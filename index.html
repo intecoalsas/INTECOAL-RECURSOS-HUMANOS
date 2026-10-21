@@ -2021,7 +2021,7 @@ function copiarQuincenaAnterior() {
     anteriores.forEach(function(n) {
       function setVal(id, val) {
         var el = document.getElementById(id);
-        if (el) { el.value = val || 0; }
+        if (el) { el.value = Math.round(Number(val) || 0); }
       }
       setVal('ns-nd-'  + n.uid, n.dias);
       setVal('ns-sb-'  + n.uid, n.salario_base);
@@ -2061,15 +2061,15 @@ function cargarNomina(cb) {
       var p = mes.split('-');
       return new Date(parseInt(p[0]), parseInt(p[1]), 0).getDate() - 15;
     })();
-    var nd = existing && existing.dias ? Number(existing.dias) : ndAuto;
-    var sb   = existing ? existing.salario_base      : 0;
-    var atr  = existing ? (existing.aux_transporte    || 0) : 0;
-    var oau  = existing ? (existing.otros_auxilios    || 0) : 0;
-    var bon  = existing ? (existing.bonificaciones    || 0) : 0;
-    var hex  = existing ? (existing.val_horas_extra   || 0) : 0;
-    var vac  = existing ? (existing.vacaciones        || 0) : 0;
-    var dsa  = existing ? (existing.dcto_salud        || 0) : 0;
-    var dpe  = existing ? (existing.dcto_pension      || 0) : 0;
+    var nd = existing && existing.dias ? Math.round(Number(existing.dias)) : ndAuto;
+    var sb   = Math.round(existing ? (existing.salario_base      || 0) : 0);
+    var atr  = Math.round(existing ? (existing.aux_transporte    || 0) : 0);
+    var oau  = Math.round(existing ? (existing.otros_auxilios    || 0) : 0);
+    var bon  = Math.round(existing ? (existing.bonificaciones    || 0) : 0);
+    var hex  = Math.round(existing ? (existing.val_horas_extra   || 0) : 0);
+    var vac  = Math.round(existing ? (existing.vacaciones        || 0) : 0);
+    var dsa  = Math.round(existing ? (existing.dcto_salud        || 0) : 0);
+    var dpe  = Math.round(existing ? (existing.dcto_pension      || 0) : 0);
     var nts  = existing ? (existing.notas||'')        : '';
     var tot  = sb + atr + oau + bon + hex + vac - dsa - dpe;
     return '<tr>'
